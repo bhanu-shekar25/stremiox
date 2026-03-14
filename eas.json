@@ -11,6 +11,9 @@
         "buildType": "apk",
         "gradleCommand": "clean assembleDebug"
       },
+      "cache": {
+        "key": "v2-clean-build"
+      },
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }
@@ -20,6 +23,9 @@
       "android": {
         "buildType": "apk",
         "gradleCommand": "clean assembleRelease"
+      },
+      "cache": {
+        "key": "v2-clean-build"
       }
     },
     "production": {
@@ -27,6 +33,9 @@
       "android": {
         "buildType": "app-bundle",
         "gradleCommand": "clean bundleRelease"
+      },
+      "cache": {
+        "key": "v2-clean-build"
       }
     }
   },

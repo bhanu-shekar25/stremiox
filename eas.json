@@ -9,10 +9,7 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk",
-        "gradleCommand": "clean assembleDebug"
-      },
-      "cache": {
-        "key": "v2-clean-build"
+        "gradleCommand": ":app:assembleDebug"
       },
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
@@ -22,20 +19,14 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk",
-        "gradleCommand": "clean assembleRelease"
-      },
-      "cache": {
-        "key": "v2-clean-build"
+        "gradleCommand": ":app:assembleRelease"
       }
     },
     "production": {
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle",
-        "gradleCommand": "clean bundleRelease"
-      },
-      "cache": {
-        "key": "v2-clean-build"
+        "gradleCommand": ":app:bundleRelease"
       }
     }
   },

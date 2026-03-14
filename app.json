@@ -49,14 +49,12 @@
       ["expo-notifications", { "icon": "./assets/icon.png", "color": "#7b2fff" }],
       "expo-libvlc-player",
       "./plugins/withDownloadForegroundService",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "minSdkVersion": 26
-          }
-        }
-      ]
+      ["expo-build-properties", {
+  "android": {
+    "minSdkVersion": 26,
+    "newArchEnabled": false
+  }
+}]
     ],
     "extra": {
       "router": {},

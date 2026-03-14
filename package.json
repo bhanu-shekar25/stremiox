@@ -1,7 +1,7 @@
 {
   "name": "stremiox",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -31,9 +31,9 @@
     "expo-sqlite": "~55.0.10",
     "expo-status-bar": "~55.0.4",
     "expo-system-ui": "~55.0.9",
-    "p-queue": "^9.1.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "p-queue": "^6.6.2",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
     "react-native": "0.83.2",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.23.0",
@@ -42,7 +42,6 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "@types/react-native": "^0.72.8",
     "babel-plugin-inline-import": "^3.0.0",
     "drizzle-kit": "^0.31.9",
     "typescript": "~5.9.2"

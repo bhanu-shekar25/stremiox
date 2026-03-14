@@ -5,16 +5,16 @@
   },
   "build": {
     "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug"
-      },
-      "env": {
-        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
-      }
-    },
+  "developmentClient": true,
+  "distribution": "internal",
+  "android": {
+    "buildType": "apk",
+    "gradleCommand": ":app:assembleDebug --stacktrace --info"
+  },
+  "env": {
+    "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+  }
+},
     "preview": {
       "distribution": "internal",
       "android": {

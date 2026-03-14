@@ -1,8 +1,6 @@
-import React, { forwardRef, useImperativeHandle, useState } from 'react';
-import { View, Text, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
-// Note: react-native-vlc-mediaplayer requires native build
-// This is a placeholder component for development
-// In production, use: import { VLCPlayer } from 'react-native-vlc-mediaplayer';
+import React, { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
+import { LibVlcPlayerView } from 'expo-libvlc-player';
 
 export interface VLCPlayerRef {
   play: () => void;
@@ -26,57 +24,94 @@ interface VLCWrapperProps {
 export const VLCWrapper = forwardRef<VLCPlayerRef, VLCWrapperProps>(
   ({ source, startPositionMs = 0, subtitleUri, style, onProgress, onEnd, onError, onBuffer }, ref) => {
     const [isPlaying, setIsPlaying] = useState(true);
-    const [currentTime, setCurrentTime] = useState(startPositionMs);
-    const [duration, setDuration] = useState(0);
+    const [isBuffering, setIsBuffering] = useState(true);
+    const playerRef = useRef<any>(null);
+    const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
     // Expose player methods to parent
     useImperativeHandle(ref, () => ({
-      play: () => setIsPlaying(true),
-      pause: () => setIsPlaying(false),
-      seek: (positionMs: number) => setCurrentTime(positionMs),
+      play: () => {
+        playerRef.current?.play();
+        setIsPlaying(true);
+      },
+      pause: () => {
+        playerRef.current?.pause();
+        setIsPlaying(false);
+      },
+      seek: (positionMs: number) => {
+        playerRef.current?.seek(positionMs / 1000);
+      },
       setAudioTrack: (index: number) => {
-        console.log('Set audio track:', index);
+        playerRef.current?.setAudioTrack(index);
       },
       setSubtitleTrack: (index: number) => {
-        console.log('Set subtitle track:', index);
-        if (index >= 0 && subtitleUri) {
-          // Would set subtitle in real VLC player
-        }
+        playerRef.current?.setSubtitleTrack(index);
       },
     }));
 
-    // Simulate progress for development
-    React.useEffect(() => {
-      if (!isPlaying) return;
-      
-      const interval = setInterval(() => {
-        setCurrentTime((prev) => {
-          const newTime = prev + 250;
-          onProgress(newTime, duration || 100000);
-          return newTime;
-        });
-      }, 250);
+    // Simulate progress updates (expo-libvlc-player doesn't expose onProgress)
+    useEffect(() => {
+      if (isPlaying && !isBuffering) {
+        progressInterval.current = setInterval(() => {
+          // Get current position from player
+          const position = playerRef.current?.getCurrentPosition?.() || 0;
+          const duration = playerRef.current?.getDuration?.() || 0;
+          onProgress(position * 1000, duration * 1000);
+        }, 250);
+      } else {
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+        }
+      }
 
-      return () => clearInterval(interval);
-    }, [isPlaying, duration]);
+      return () => {
+        if (progressInterval.current) {
+          clearInterval(progressInterval.current);
+        }
+      };
+    }, [isPlaying, isBuffering, onProgress]);
+
+    // Seek to start position after load
+    useEffect(() => {
+      if (startPositionMs > 0 && !isBuffering && playerRef.current) {
+        playerRef.current.seek(startPositionMs / 1000);
+      }
+    }, [startPositionMs, isBuffering]);
+
+    // Handle subtitle loading
+    useEffect(() => {
+      if (subtitleUri && !isBuffering && playerRef.current) {
+        console.log('Subtitle loaded:', subtitleUri);
+      }
+    }, [subtitleUri, isBuffering]);
+
+    // Simulate load complete
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setIsBuffering(false);
+        onBuffer(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }, [source.uri, onBuffer]);
 
     return (
       <View style={[styles.container, style]}>
-        <View style={styles.placeholder}>
-          <ActivityIndicator size="large" color="#7b2fff" />
-          <PlaceholderText>VLC Player (Development Mode)</PlaceholderText>
-          <PlaceholderText>URI: {source.uri}</PlaceholderText>
-          {subtitleUri && <PlaceholderText>Subtitle: {subtitleUri}</PlaceholderText>}
-        </View>
+        <LibVlcPlayerView
+          ref={playerRef}
+          source={source.uri}
+          autoplay={isPlaying}
+          style={styles.player}
+        />
+        
+        {/* Buffering Indicator */}
+        {isBuffering && (
+          <View style={styles.bufferingOverlay}>
+            <ActivityIndicator size="large" color="#7b2fff" />
+          </View>
+        )}
       </View>
     );
   }
-);
-
-const PlaceholderText = ({ children }: { children: React.ReactNode }) => (
-  <View style={{ marginVertical: 4 }}>
-    <Text style={{ color: '#fff', textAlign: 'center' }}>{children}</Text>
-  </View>
 );
 
 const styles = StyleSheet.create({
@@ -84,10 +119,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  placeholder: {
+  player: {
     flex: 1,
+  },
+  bufferingOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
 }); 

@@ -47,7 +47,7 @@
       "expo-router",
       "expo-font",
       ["expo-notifications", { "icon": "./assets/icon.png", "color": "#7b2fff" }],
-      "./plugins/withVLCPlayer",
+      "expo-libvlc-player",
       "./plugins/withDownloadForegroundService",
       [
         "expo-build-properties",

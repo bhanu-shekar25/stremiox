@@ -1,35 +1,54 @@
 {
   "expo": {
-    "name": "stremiox",
+    "name": "StremioX",
     "slug": "stremiox",
+    "scheme": "stremiox",
     "version": "1.0.0",
     "orientation": "portrait",
+    "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "sdkVersion": "55.0.0",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0d0d0d"
     },
+    "sdkVersion": "55.0.0",
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.bhanushekar2002.stremiox",
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": ["fetch", "processing"]
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0d0d0d",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.bhanushekar2002.stremiox"
+      "package": "com.bhanushekar2002.stremiox",
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_DATA_SYNC",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
+      "expo-font",
+      ["expo-notifications", { "icon": "./assets/icon.png", "color": "#7b2fff" }],
+      "./plugins/withVLCPlayer",
+      "./plugins/withDownloadForegroundService",
       [
         "expo-build-properties",
         {

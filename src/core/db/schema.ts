@@ -1,0 +1,40 @@
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+
+export const downloads = sqliteTable('downloads', {
+  id: text('id').primaryKey(),
+  imdbId: text('imdb_id').notNull(),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  season: integer('season'),
+  episode: integer('episode'),
+  episodeTitle: text('episode_title'),
+  posterUrl: text('poster_url'),
+  streamName: text('stream_name'),
+  streamUrl: text('stream_url').notNull(),
+  directUrl: text('direct_url'),
+  localPath: text('local_path'),
+  fileSize: integer('file_size'),
+  quality: text('quality'),
+  addonId: text('addon_id'),
+  status: text('status').notNull(),
+  progress: real('progress').default(0),
+  downloadedBytes: integer('downloaded_bytes').default(0),
+  subtitlePath: text('subtitle_path'),
+  subtitleLang: text('subtitle_lang'),
+  createdAt: integer('created_at').notNull(),
+  completedAt: integer('completed_at'),
+});
+
+export const watchProgress = sqliteTable('watch_progress', {
+  id: text('id').primaryKey(),
+  imdbId: text('imdb_id').notNull(),
+  type: text('type').notNull(),
+  title: text('title').notNull(),
+  season: integer('season'),
+  episode: integer('episode'),
+  posterUrl: text('poster_url'),
+  positionMs: integer('position_ms').default(0),
+  durationMs: integer('duration_ms').default(0),
+  isOffline: integer('is_offline').default(0),
+  updatedAt: integer('updated_at').notNull(),
+}); 

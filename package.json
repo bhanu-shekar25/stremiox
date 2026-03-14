@@ -42,6 +42,7 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "babel-plugin-inline-import": "^3.0.0",
+    "babel-preset-expo": "^55.0.11",
     "drizzle-kit": "^0.31.9",
     "typescript": "~5.9.2"
   },

@@ -1,8 +1,9 @@
 {
   "mode": "yolo",
-  "depth": "quick",
+  "depth": "comprehensive",
   "parallelization": false,
   "projectName": "StremioX",
   "description": "React Native/Expo mobile Stremio client with Real-Debrid offline downloads",
-  "createdAt": "2026-03-14"
+  "createdAt": "2026-03-14",
+  "updatedAt": "2026-03-14"
 } 

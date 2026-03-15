@@ -62,7 +62,14 @@ export function buildStreamUrl(
   season?: number,
   episode?: number
 ): string {
-  const baseUrl = addon.transportUrl.replace(/\/$/, ''); // Remove trailing slash
+  // ✅ FIX: Strip /manifest.json suffix AND trailing slash.
+  // Previously only stripped trailing slash, causing 404s when transportUrl
+  // ends with /manifest.json (e.g. Torrentio, Jackettio, Comet, etc.)
+  // The URL was being built as: .../manifest.json/stream/movie/tt123.json → 404
+  // Now correctly: .../stream/movie/tt123.json
+  const baseUrl = addon.transportUrl
+    .replace(/\/manifest\.json$/, '')
+    .replace(/\/$/, '');
 
   if (type === 'movie') {
     return `${baseUrl}/stream/movie/${id}.json`;

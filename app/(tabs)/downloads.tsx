@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useDownloadStore } from '@/features/downloads/store';
 import { setupNotificationChannels } from '@/features/downloads/notifications';
 import { DownloadItem } from '@/features/downloads/components/DownloadItem';
@@ -41,7 +42,7 @@ export default function DownloadsScreen() {
   const handlePlay = (download: Download) => {
     if (download.localPath) {
       router.push({
-        pathname: '/player/[id]',
+        pathname: '/player',
         params: {
           id: download.localPath,
           title: download.title,
@@ -121,9 +122,6 @@ export default function DownloadsScreen() {
     </View>
   );
 }
-
-// Import Ionicons after component to avoid issues
-import { Ionicons } from '@expo/vector-icons';
 
 const styles = StyleSheet.create({
   container: {

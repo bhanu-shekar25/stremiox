@@ -17,7 +17,10 @@
       "bundleIdentifier": "com.bhanushekar2002.stremiox",
       "supportsTablet": true,
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "processing"]
+        "UIBackgroundModes": [
+          "fetch",
+          "processing"
+        ]
       }
     },
     "android": {
@@ -46,13 +49,24 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      ["expo-notifications", { "icon": "./assets/icon.png", "color": "#7b2fff" }],
-      ["expo-build-properties", {
-        "android": {
-          "minSdkVersion": 26,
-          "newArchEnabled": false
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#7b2fff"
         }
-      }]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "newArchEnabled": false,
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "expo-video"
     ],
     "extra": {
       "router": {},

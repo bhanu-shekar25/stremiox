@@ -29,38 +29,50 @@ export function StreamItem({ stream, onPlay, onDownload }: StreamItemProps) {
           {stream.quality && stream.quality !== 'Unknown' && (
             <Badge label={stream.quality} variant={stream.quality as any} size="sm" />
           )}
-          
-          {/* Stream Name/Title */}
-          <Text style={styles.streamName} numberOfLines={1}>
-            {stream.name || stream.title || 'Unknown Stream'}
-          </Text>
-          
+
           {/* RD Cached Indicator */}
           {stream.isRDCached && (
-            <Ionicons name="flash" size={14} color={colors.warning} style={styles.rdIcon} />
+            <View style={styles.rdCachedBadge}>
+              <Ionicons name="flash" size={12} color={colors.warning} />
+              <Text style={styles.rdCachedText}>RD</Text>
+            </View>
           )}
+
+          {/* Stream Name/Title */}
+          <Text style={styles.streamName} numberOfLines={2}>
+            {stream.name || stream.title || 'Unknown Stream'}
+          </Text>
         </View>
-        
+      </View>
+
+      {/* Metadata Row */}
+      <View style={styles.metadata}>
         {/* File Size */}
         {stream.behaviorHints?.videoSize && (
-          <Text style={styles.fileSize}>
-            {formatFileSize(stream.behaviorHints.videoSize)}
-          </Text>
+          <View style={styles.metadataItem}>
+            <Ionicons name="server-outline" size={14} color={colors.textSecondary} />
+            <Text style={styles.metadataText}>{formatFileSize(stream.behaviorHints.videoSize)}</Text>
+          </View>
+        )}
+
+        {/* Seeders */}
+        {stream.behaviorHints?.seeders && (
+          <View style={styles.metadataItem}>
+            <Ionicons name="arrow-up-outline" size={14} color={colors.success} />
+            <Text style={[styles.metadataText, { color: colors.success }]}>
+              {stream.behaviorHints.seeders}
+            </Text>
+          </View>
         )}
       </View>
-      
-      {/* Addon Name */}
-      {stream.addonName && (
-        <Text style={styles.addonName}>{stream.addonName}</Text>
-      )}
-      
+
       {/* Action Buttons */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.playButton} onPress={onPlay}>
           <Ionicons name="play" size={16} color={colors.background} />
           <Text style={styles.playButtonText}>Play</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.downloadButton} onPress={onDownload}>
           <Ionicons name="download-outline" size={16} color={colors.primary} />
           <Text style={styles.downloadButtonText}>Download</Text>
@@ -73,51 +85,67 @@ export function StreamItem({ stream, onPlay, onDownload }: StreamItemProps) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   streamInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
     gap: 6,
   },
   streamName: {
     color: colors.textPrimary,
     fontSize: typography.sizes.sm,
     flex: 1,
+    lineHeight: 20,
   },
-  rdIcon: {
-    marginLeft: 4,
+  rdCachedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 193, 7, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 3,
   },
-  fileSize: {
+  rdCachedText: {
+    color: colors.warning,
+    fontSize: typography.sizes.xs,
+    fontWeight: '600',
+  },
+  metadata: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 10,
+  },
+  metadataItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metadataText: {
     color: colors.textSecondary,
     fontSize: typography.sizes.xs,
-  },
-  addonName: {
-    color: colors.textSecondary,
-    fontSize: typography.sizes.xs,
-    marginBottom: 8,
   },
   actions: {
     flexDirection: 'row',
     gap: 8,
   },
   playButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
   },
   playButtonText: {
     color: colors.background,
@@ -125,19 +153,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   downloadButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'rgba(123, 47, 255, 0.2)',
     borderWidth: 1,
     borderColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
   },
   downloadButtonText: {
     color: colors.primary,
     fontSize: typography.sizes.sm,
     fontWeight: '600',
   },
-}); 
+});

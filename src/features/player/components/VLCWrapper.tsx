@@ -1,12 +1,13 @@
-import React, { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
+import React, { forwardRef, useImperativeHandle, useEffect } from 'react';
 import { View, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
-import { LibVlcPlayerView } from 'expo-libvlc-player';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { useEvent } from 'expo';
 
 export interface VLCPlayerRef {
   play: () => void;
   pause: () => void;
   seek: (positionMs: number) => void;
-  setAudioTrack: (index: number) => void;
+  setAudioTrack: (index: number) => void; // Limited support in standard web/mobile players
   setSubtitleTrack: (index: number) => void;
 }
 
@@ -22,85 +23,62 @@ interface VLCWrapperProps {
 }
 
 export const VLCWrapper = forwardRef<VLCPlayerRef, VLCWrapperProps>(
-  ({ source, startPositionMs = 0, subtitleUri, style, onProgress, onEnd, onError, onBuffer }, ref) => {
-    const [isPlaying, setIsPlaying] = useState(true);
-    const [isBuffering, setIsBuffering] = useState(true);
-    const playerRef = useRef<any>(null);
-    const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  ({ source, startPositionMs = 0, style, onProgress, onEnd, onError, onBuffer }, ref) => {
+    
+    // Initialize the player
+    const player = useVideoPlayer(source.uri, (player) => {
+      player.loop = false;
+      player.play();
+      if (startPositionMs > 0) {
+        player.seekBy(startPositionMs / 1000);
+      }
+    });
 
-    // Expose player methods to parent
+    // Listen to status changes (buffering/loading)
+    const { status, error } = useEvent(player, 'statusChange');
+    const isBuffering = status === 'loading';
+
+    // Handle Errors
+    useEffect(() => {
+      if (status === 'error' && error) onError(error);
+    }, [status, error]);
+
+    // Handle Buffering
+    useEffect(() => {
+      onBuffer(isBuffering);
+    }, [isBuffering]);
+
+    // Native Progress Updates (runs every time the time updates)
+    useEvent(player, 'timeUpdate', (payload) => {
+      // payload.currentTime and player.duration are in seconds
+      onProgress(payload.currentTime * 1000, player.duration * 1000);
+    });
+
+    // Handle End of video
+    useEvent(player, 'playToEnd', () => {
+      onEnd();
+    });
+
+    // Expose methods to parent via ref
     useImperativeHandle(ref, () => ({
-      play: () => {
-        playerRef.current?.play();
-        setIsPlaying(true);
-      },
-      pause: () => {
-        playerRef.current?.pause();
-        setIsPlaying(false);
-      },
-      seek: (positionMs: number) => {
-        playerRef.current?.seek(positionMs / 1000);
-      },
+      play: () => player.play(),
+      pause: () => player.pause(),
+      seek: (positionMs: number) => player.seekBy(positionMs / 1000),
       setAudioTrack: (index: number) => {
-        playerRef.current?.setAudioTrack(index);
+        console.warn("Audio track switching not supported in expo-video yet");
       },
       setSubtitleTrack: (index: number) => {
-        playerRef.current?.setSubtitleTrack(index);
+        console.warn("Subtitle track switching not supported in expo-video yet");
       },
     }));
 
-    // Simulate progress updates (expo-libvlc-player doesn't expose onProgress)
-    useEffect(() => {
-      if (isPlaying && !isBuffering) {
-        progressInterval.current = setInterval(() => {
-          // Get current position from player
-          const position = playerRef.current?.getCurrentPosition?.() || 0;
-          const duration = playerRef.current?.getDuration?.() || 0;
-          onProgress(position * 1000, duration * 1000);
-        }, 250);
-      } else {
-        if (progressInterval.current) {
-          clearInterval(progressInterval.current);
-        }
-      }
-
-      return () => {
-        if (progressInterval.current) {
-          clearInterval(progressInterval.current);
-        }
-      };
-    }, [isPlaying, isBuffering, onProgress]);
-
-    // Seek to start position after load
-    useEffect(() => {
-      if (startPositionMs > 0 && !isBuffering && playerRef.current) {
-        playerRef.current.seek(startPositionMs / 1000);
-      }
-    }, [startPositionMs, isBuffering]);
-
-    // Handle subtitle loading
-    useEffect(() => {
-      if (subtitleUri && !isBuffering && playerRef.current) {
-        console.log('Subtitle loaded:', subtitleUri);
-      }
-    }, [subtitleUri, isBuffering]);
-
-    // Simulate load complete
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setIsBuffering(false);
-        onBuffer(false);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }, [source.uri, onBuffer]);
-
     return (
       <View style={[styles.container, style]}>
-        <LibVlcPlayerView
-          ref={playerRef}
-          source={source.uri}
-          autoplay={isPlaying}
-          style={styles.player}
+        <VideoView 
+          player={player} 
+          style={styles.player} 
+          allowsFullscreen 
+          allowsPictureInPicture 
         />
         
         {/* Buffering Indicator */}
@@ -128,4 +106,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
-}); 
+});

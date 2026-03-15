@@ -20,8 +20,12 @@ export default function DiscoverScreen() {
   // Build catalog sources from addons
   const catalogSources: CatalogSource[] = React.useMemo(() => {
     const sources: CatalogSource[] = [];
-    
+
     addons.forEach((addon) => {
+      // Skip addons without catalogs
+      if (!addon.catalogs || !Array.isArray(addon.catalogs)) {
+        return;
+      }
       addon.catalogs.forEach((catalog) => {
         sources.push({
           name: `${addon.name} - ${catalog.name}`,
@@ -31,7 +35,7 @@ export default function DiscoverScreen() {
         });
       });
     });
-    
+
     return sources;
   }, [addons]);
 

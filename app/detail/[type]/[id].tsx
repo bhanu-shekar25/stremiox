@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ImageBackground,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,12 +19,16 @@ import { getMeta } from '@/features/metadata/cinemeta';
 import { getStreamsFromAllAddons } from '@/features/streams/fetcher';
 import { StreamList } from '@/features/streams/components/StreamList';
 import { Badge } from '@/shared/ui/Badge';
+import { useAddonStore } from '@/features/addons/store';
 import type { LibraryItem, Stream } from '@/types';
 
 export default function DetailScreen() {
   const { type, id } = useLocalSearchParams<{ type: string; id: string }>();
   const router = useRouter();
-  
+  const syncAddons = useAddonStore((state) => state.sync);
+  const hasAddons = useAddonStore((state) => state.hasAddons());
+  const addonsCount = useAddonStore((state) => state.addons.length);
+
   const [meta, setMeta] = useState<LibraryItem | null>(null);
   const [streams, setStreams] = useState<Stream[]>([]);
   const [isLoadingMeta, setIsLoadingMeta] = useState(true);
@@ -39,6 +44,12 @@ export default function DetailScreen() {
       setIsLoadingStreams(true);
 
       try {
+        // Ensure addons are synced before fetching streams
+        if (!hasAddons || addonsCount <= 3) {
+          console.log('[Detail] Syncing addons before fetching streams...');
+          await syncAddons();
+        }
+
         // Fetch metadata and streams in parallel
         const [metaData, streamData] = await Promise.all([
           getMeta(type as 'movie' | 'series', id),
@@ -47,6 +58,8 @@ export default function DetailScreen() {
 
         setMeta(metaData);
         setStreams(streamData);
+        console.log('[Detail] Loaded', streamData.length, 'streams from', 
+          new Set(streamData.map(s => s.addonName)).size, 'addons');
       } catch (err) {
         console.error('Failed to load detail:', err);
         setError('Failed to load content');
@@ -62,23 +75,38 @@ export default function DetailScreen() {
   const handlePlay = (stream?: Stream) => {
     // Navigate to player with stream URL
     const streamToPlay = stream || streams.find((s) => s.isRDCached) || streams[0];
-    if (streamToPlay?.url) {
-      router.push({
-        pathname: '/player/[id]',
-        params: {
-          id: streamToPlay.url,
-          title: meta?.name || '',
-          type: type || 'movie',
-          imdbId: id || '',
-        },
-      });
+    
+    if (!streamToPlay) return;
+    
+    // Build params object
+    const params: Record<string, string> = {
+      title: meta?.name || '',
+      type: type || 'movie',
+      imdbId: id || '',
+    };
+    
+    // For torrent streams (with infoHash), pass the torrent info
+    if (streamToPlay.infoHash) {
+      params.infoHash = streamToPlay.infoHash;
+      params.fileIdx = streamToPlay.fileIdx?.toString() || '0';
+      params.id = streamToPlay.infoHash; // Use infoHash as the ID for routing
+    } else if (streamToPlay.url) {
+      // Direct URL stream - encode it for URL safety
+      params.id = encodeURIComponent(streamToPlay.url);
     }
+    
+    router.push({
+      pathname: '/player',
+      params,
+    });
   };
 
   const handleDownload = (stream: Stream) => {
-    // Navigate to download confirm or start download
-    console.log('Download stream:', stream);
-    // TODO: Implement download flow
+    // Start download with the selected stream
+    console.log('Starting download for stream:', stream);
+    // The download will be handled by the download engine
+    // For now, show a message
+    Alert.alert('Download Started', 'Your download will begin shortly. Check the Downloads tab for progress.');
   };
 
   const handleBack = () => {

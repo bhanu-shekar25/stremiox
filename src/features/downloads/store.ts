@@ -120,6 +120,7 @@ export const useDownloadStore = create<DownloadState>()(
     {
       name: 'stremiox-downloads',
       storage: createJSONStorage(() => sqliteStorage),
+      skipHydration: true, // Manually rehydrate after DB is initialized
     }
   )
 );

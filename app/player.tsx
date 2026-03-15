@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, ActivityIndicator, StatusBar } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, StatusBar, Alert, Text, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { usePlayerStore } from '@/features/player/store';
 import { VLCWrapper, VLCPlayerRef } from '@/features/player/components/VLCWrapper';
@@ -8,17 +8,20 @@ import { SubtitlePicker } from '@/features/player/components/SubtitlePicker';
 import { AudioPicker } from '@/features/player/components/AudioPicker';
 import { NextEpisodeOverlay } from '@/features/player/components/NextEpisodeOverlay';
 import { saveProgress, loadProgress, markCompleted, formatTime } from '@/features/player/progress';
+import { resolveTorrentStream } from '@/core/api/real-debrid';
 import { colors } from '@/core/theme/colors';
 
 export default function PlayerScreen() {
   const router = useRouter();
-  const { id, title, type, imdbId, isOffline, subtitleUri } = useLocalSearchParams<{
+  const { id, title, type, imdbId, isOffline, subtitleUri, infoHash, fileIdx } = useLocalSearchParams<{
     id: string;
     title: string;
     type: string;
     imdbId: string;
     isOffline?: string;
     subtitleUri?: string;
+    infoHash?: string;
+    fileIdx?: string;
   }>();
 
   const playerRef = useRef<VLCPlayerRef>(null);
@@ -31,9 +34,54 @@ export default function PlayerScreen() {
   const [showNextEpisode, setShowNextEpisode] = useState(false);
   const [startPosition, setStartPosition] = useState(0);
   const [lastSaveTime, setLastSaveTime] = useState(0);
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isSeries = type === 'series';
   const isOfflinePlayback = isOffline === 'true';
+  const isTorrent = !!infoHash;
+
+  // Resolve torrent stream or use direct URL
+  useEffect(() => {
+    const resolveStream = async () => {
+      if (isOfflinePlayback) {
+        // Use local file path directly
+        setStreamUrl(id);
+        return;
+      }
+
+      if (infoHash) {
+        // This is a torrent stream - resolve via Real-Debrid
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+          const idx = fileIdx ? parseInt(fileIdx, 10) : 0;
+          const url = await resolveTorrentStream(infoHash, idx);
+          
+          if (url) {
+            console.log('[Player] Resolved stream URL:', url);
+            setStreamUrl(url);
+          } else {
+            setError('Failed to resolve torrent stream. Please try a different source.');
+            Alert.alert('Error', 'Failed to resolve torrent stream. Please try a different source.');
+          }
+        } catch (err) {
+          console.error('[Player] Stream resolution failed:', err);
+          setError(err instanceof Error ? err.message : 'Unknown error');
+          Alert.alert('Error', 'Failed to load stream. Please try a different source.');
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // Direct URL stream
+        setStreamUrl(id);
+      }
+    };
+
+    resolveStream();
+  }, [infoHash, fileIdx, id, isOfflinePlayback]);
 
   // Load saved progress on mount
   useEffect(() => {
@@ -146,14 +194,42 @@ export default function PlayerScreen() {
     setShowControls(!showControls);
   };
 
+  // Show loading state while resolving stream
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar hidden />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Resolving stream...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error || !streamUrl) {
+    return (
+      <View style={styles.container}>
+        <StatusBar hidden />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error || 'No stream URL'}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => router.back()}>
+            <Text style={styles.retryButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar hidden />
-      
+
       {/* Video Player */}
       <VLCWrapper
         ref={playerRef}
-        source={{ uri: id }}
+        source={{ uri: streamUrl }}
         startPositionMs={startPosition}
         subtitleUri={subtitleUri}
         style={styles.player}
@@ -239,5 +315,40 @@ const styles = StyleSheet.create({
   },
   tapZone: {
     ...StyleSheet.absoluteFillObject,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000',
+  },
+  loadingText: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000',
+    paddingHorizontal: 24,
+  },
+  errorText: {
+    color: colors.error,
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: colors.background,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -54,22 +54,37 @@ export async function fetchContinueWatching(): Promise<WatchProgress[]> {
  */
 export async function fetchHomeRows(addons: AddonManifest[]): Promise<HomeRow[]> {
   const rows: HomeRow[] = [];
-  
+
+  console.log('[HomeAPI] Total addons:', addons.length);
+  console.log('[HomeAPI] Sample addon:', addons[0]?.name, 'catalogs:', addons[0]?.catalogs?.length);
+
   // Get addons with catalog support
-  const catalogAddons = getAddonsByResource(addons, 'catalog').slice(0, 5);
-  
+  const catalogAddons = getAddonsByResource(addons, 'catalog');
+  console.log('[HomeAPI] Addons with catalog resource:', catalogAddons.length);
+  console.log('[HomeAPI] Catalog addons:', catalogAddons.map(a => ({ name: a.name, catalogs: a.catalogs?.length })));
+
+  const catalogAddonsToUse = catalogAddons.slice(0, 5);
+
   // Fetch catalog from each add-on (fail silently)
-  for (const addon of catalogAddons) {
+  for (const addon of catalogAddonsToUse) {
     try {
-      if (addon.catalogs.length === 0) continue;
-      
+      // Skip addons without catalogs array or empty catalogs
+      if (!addon.catalogs || !Array.isArray(addon.catalogs) || addon.catalogs.length === 0) {
+        console.log('[HomeAPI] Skipping', addon.name, '- no catalogs');
+        continue;
+      }
+
       const firstCatalog = addon.catalogs[0];
+      console.log('[HomeAPI] Fetching catalog:', firstCatalog.name, 'from', addon.name);
+      
       const items = await getCatalog(
         addon.transportUrl,
         firstCatalog.type,
         firstCatalog.id
       );
-      
+
+      console.log('[HomeAPI] Got', items.length, 'items from', addon.name);
+
       if (items.length > 0) {
         rows.push({
           title: `${addon.name} - ${firstCatalog.name}`,
@@ -83,7 +98,8 @@ export async function fetchHomeRows(addons: AddonManifest[]): Promise<HomeRow[]>
       continue;
     }
   }
-  
+
+  console.log('[HomeAPI] Total rows fetched:', rows.length);
   return rows;
 }
 

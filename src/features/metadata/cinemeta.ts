@@ -83,21 +83,29 @@ export async function getCatalog(
   extra?: Record<string, string>
 ): Promise<LibraryItem[]> {
   try {
+    // Remove /manifest.json from transportUrl if present
+    const baseUrl = transportUrl.replace(/\/manifest\.json$/, '');
+    
     // Build URL with extra params as path segments
     let url = `/catalog/${type}/${catalogId}`;
-    
+
     if (extra && Object.keys(extra).length > 0) {
       const extraPath = Object.entries(extra)
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         .join('&');
       url += `/${extraPath}`;
     }
-    
+
     url += '.json';
 
+    console.log('[getCatalog] Fetching:', baseUrl + url);
+
     const response = await cinemetaAxios.get<CinemetaCatalogResponse>(url, {
-      baseURL: transportUrl,
+      baseURL: baseUrl,
+      timeout: 10000,
     });
+
+    console.log('[getCatalog] Response:', response.data.metas?.length || 0, 'items');
 
     return response.data.metas.map((meta) => ({
       id: meta.id,
@@ -109,7 +117,7 @@ export async function getCatalog(
       genres: meta.genres,
     }));
   } catch (error) {
-    console.error('Failed to fetch catalog:', error);
+    console.error('Failed to fetch catalog:', transportUrl, error);
     return [];
   }
 }

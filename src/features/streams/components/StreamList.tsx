@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/core/theme/colors';
 import { typography } from '@/core/theme/typography';
 import { StreamItem } from './StreamItem';
@@ -16,7 +17,7 @@ export function StreamList({ streams, isLoading, onPlay, onDownload }: StreamLis
   // Group streams by addon
   const streamsByAddon = React.useMemo(() => {
     const grouped: Record<string, Stream[]> = {};
-    
+
     streams.forEach((stream) => {
       const addonKey = stream.addonName || 'Unknown';
       if (!grouped[addonKey]) {
@@ -24,22 +25,29 @@ export function StreamList({ streams, isLoading, onPlay, onDownload }: StreamLis
       }
       grouped[addonKey].push(stream);
     });
-    
+
     return grouped;
   }, [streams]);
 
-  const renderSectionHeader = (addonName: string) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionHeaderText}>{addonName}</Text>
-    </View>
-  );
+  const getAddonIcon = (addonName: string) => {
+    if (addonName.toLowerCase().includes('torrentio')) return 'cloud-outline';
+    if (addonName.toLowerCase().includes('cinemeta')) return 'film-outline';
+    if (addonName.toLowerCase().includes('openload')) return 'play-circle-outline';
+    if (addonName.toLowerCase().includes('realdebrid') || addonName.toLowerCase().includes('rd')) return 'flash-outline';
+    return 'apps-outline';
+  };
 
-  const renderStream = ({ item }: { item: Stream }) => (
-    <StreamItem
-      stream={item}
-      onPlay={() => onPlay(item)}
-      onDownload={() => onDownload(item)}
-    />
+  const renderSectionHeader = (addonName: string, streamCount: number) => (
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionHeaderContent}>
+        <Ionicons name={getAddonIcon(addonName)} size={16} color={colors.textSecondary} />
+        <Text style={styles.sectionHeaderText}>{addonName}</Text>
+        <View style={styles.streamCountBadge}>
+          <Text style={styles.streamCountText}>{streamCount}</Text>
+        </View>
+      </View>
+      <View style={styles.sectionDivider} />
+    </View>
   );
 
   const renderLoading = () => (
@@ -51,6 +59,7 @@ export function StreamList({ streams, isLoading, onPlay, onDownload }: StreamLis
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
+      <Ionicons name="film-outline" size={48} color={colors.textSecondary} />
       <Text style={styles.emptyText}>No streams available</Text>
       <Text style={styles.emptySubtext}>
         Try installing more add-ons from Settings
@@ -69,14 +78,19 @@ export function StreamList({ streams, isLoading, onPlay, onDownload }: StreamLis
   return (
     <View style={styles.container}>
       {Object.entries(streamsByAddon).map(([addonName, addonStreams]) => (
-        <View key={addonName}>
-          {renderSectionHeader(addonName)}
+        <View key={addonName} style={styles.addonSection}>
+          {renderSectionHeader(addonName, addonStreams.length)}
           {addonStreams.map((stream, index) => (
-            <View key={`${addonName}-${index}`}>{renderStream({ item: stream })}</View>
+            <StreamItem
+              key={`${addonName}-${index}`}
+              stream={stream}
+              onPlay={() => onPlay(stream)}
+              onDownload={() => onDownload(stream)}
+            />
           ))}
         </View>
       ))}
-      
+
       {isLoading && (
         <View style={styles.loadingMore}>
           <ActivityIndicator size="small" color={colors.primary} />
@@ -92,14 +106,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
+  addonSection: {
+    marginBottom: 24,
+  },
   sectionHeader: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    marginBottom: 12,
+  },
+  sectionHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
   },
   sectionHeaderText: {
-    color: colors.textSecondary,
+    color: colors.textPrimary,
+    fontSize: typography.sizes.sm,
+    fontWeight: '600',
+    flex: 1,
+  },
+  streamCountBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streamCountText: {
+    color: colors.background,
     fontSize: typography.sizes.xs,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: colors.border,
   },
   loadingContainer: {
     paddingVertical: 48,

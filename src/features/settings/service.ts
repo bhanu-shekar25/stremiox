@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import { getInfoAsync, cacheDirectory, documentDirectory } from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '@/core/db';
 import { downloads } from '@/core/db/schema';
@@ -10,12 +10,11 @@ import { deleteDownload } from '@/features/downloads/engine';
  */
 export async function getTotalStorageUsed(): Promise<number> {
   try {
-    const fs = FileSystem as any;
-    const downloadsDir = (fs.cacheDirectory || fs.documentDirectory || './') + 'stremiox_downloads/';
-    
-    const dirInfo = await FileSystem.getInfoAsync(downloadsDir);
+    const downloadsDir = (cacheDirectory || documentDirectory || './') + 'stremiox_downloads/';
+
+    const dirInfo = await getInfoAsync(downloadsDir);
     if (!dirInfo.exists) return 0;
-    
+
     // Get total size (this is a simplified version)
     // In production, you'd iterate through all files and sum their sizes
     return dirInfo.size || 0;

@@ -27,7 +27,7 @@ export const useHomeStore = create<HomeState>((set, get) => ({
 
   refresh: async () => {
     const isRefreshing = get().isRefreshing;
-    
+
     // Prevent concurrent refreshes
     if (isRefreshing) return;
 
@@ -35,10 +35,14 @@ export const useHomeStore = create<HomeState>((set, get) => ({
 
     try {
       // Get addons from store
-      const addons = useAddonStore.getState().addons;
+      const addonState = useAddonStore.getState();
+      const addons = addonState.addons;
       
+      console.log('[HomeStore] Refreshing with addons:', addons.length);
+
       // If no addons, just load continue watching
       if (addons.length === 0) {
+        console.log('[HomeStore] No addons, loading continue watching only');
         const continueWatching = await fetchContinueWatching();
         set({
           continueWatching,
@@ -49,12 +53,14 @@ export const useHomeStore = create<HomeState>((set, get) => ({
       }
 
       // Fetch all home data in parallel
+      console.log('[HomeStore] Fetching home rows and hero item');
       const [continueWatching, rows, heroItem] = await Promise.all([
         fetchContinueWatching(),
         fetchHomeRows(addons),
         fetchHeroItem(addons),
       ]);
 
+      console.log('[HomeStore] Fetched rows:', rows.length, 'hero item:', heroItem ? 'yes' : 'no');
       set({
         continueWatching,
         rows,

@@ -36,9 +36,9 @@ export interface AddonManifest {
   description?: string;
   logo?: string;
   transportUrl: string;
-  resources: string[];
+  resources: (string | { name: string; types: string[] })[];
   types: string[];
-  catalogs: CatalogDefinition[];
+  catalogs?: CatalogDefinition[];
   behaviorHints?: { adult?: boolean; configurable?: boolean };
 }
 

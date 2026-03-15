@@ -1,4 +1,5 @@
-import { getInfoAsync, cacheDirectory, documentDirectory } from 'expo-file-system/legacy';
+// ✅ FIX: Use the new expo-file-system v55 API with Paths class
+import { Paths, Directory } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '@/core/db';
 import { downloads } from '@/core/db/schema';
@@ -10,14 +11,23 @@ import { deleteDownload } from '@/features/downloads/engine';
  */
 export async function getTotalStorageUsed(): Promise<number> {
   try {
-    const downloadsDir = (cacheDirectory || documentDirectory || './') + 'stremiox_downloads/';
+    const downloadsDir = new Directory(Paths.cache, 'stremiox_downloads');
 
-    const dirInfo = await getInfoAsync(downloadsDir);
-    if (!dirInfo.exists) return 0;
+    const info = Paths.info(downloadsDir.uri);
+    if (!info.isDirectory) return 0;
 
-    // Get total size (this is a simplified version)
-    // In production, you'd iterate through all files and sum their sizes
-    return dirInfo.size || 0;
+    // Iterate through files and sum their sizes
+    let totalSize = 0;
+    const contents = downloadsDir.list();
+    
+    for (const item of contents) {
+      // Use the File/Directory's size property directly
+      if ('size' in item && typeof item.size === 'number') {
+        totalSize += item.size;
+      }
+    }
+
+    return totalSize;
   } catch (error) {
     console.error('Failed to get storage used:', error);
     return 0;

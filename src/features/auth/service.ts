@@ -8,15 +8,10 @@ export async function loginStremio(
 ): Promise<StremioUser> {
   try {
     console.log('[Auth] Logging in to Stremio API...');
-    
-    // Login to Stremio API
-    const user = await APIStore.login({ email, password });
-    console.log('[Auth] Login successful:', user.email);
 
-    // Pull user data from API to get latest profile
-    console.log('[Auth] Pulling user data from Stremio API...');
-    await APIStore.pullUser();
-    console.log('[Auth] User data synced:', APIStore.user?.email);
+    // Login to Stremio API — login() returns void, user is set in APIStore.user
+    await APIStore.login({ email, password });
+    console.log('[Auth] Login successful:', APIStore.user?.email);
 
     // Pull add-on collection after successful login
     console.log('[Auth] Pulling addon collection from Stremio API...');

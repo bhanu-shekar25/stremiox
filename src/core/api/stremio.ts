@@ -1,61 +1,82 @@
 import { StremioAPIStore } from 'stremio-api-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 1. Create a synchronous in-memory cache
+// 1. Synchronous in-memory cache — stremio-api-client requires SYNCHRONOUS getJSON/setJSON
 const memoryCache: Record<string, any> = {};
 
-// 2. Create the storage adapter that stremio-api-client expects (100% synchronous)
+// 2. Storage adapter — MUST be synchronous (stremio-api-client calls getJSON() without await)
 const storage = {
   getJSON: (key: string) => {
-    // Return from memory immediately (no await, no promises!)
     const value = memoryCache[key];
     if (value === undefined) {
-      return key.includes('addons') ? [] : null;
+      // Safe defaults so the library doesn't crash on first run
+      if (key === 'addons') return [];
+      return null;
     }
     return value;
   },
   setJSON: (key: string, val: any) => {
-    // Save to memory for instant access
+    // Update in-memory cache immediately (synchronous)
     memoryCache[key] = val;
-    // Save to device hard drive in the background
-    AsyncStorage.setItem(key, JSON.stringify(val)).catch(console.error);
+    // Persist to AsyncStorage in background
+    if (val === null) {
+      AsyncStorage.removeItem(key).catch(console.error);
+    } else {
+      AsyncStorage.setItem(key, JSON.stringify(val)).catch(console.error);
+    }
   },
 };
 
-// 3. Initialize the store safely
+// 3. Create APIStore singleton
 export const APIStore = new StremioAPIStore({ storage });
 
-// 4. Export a function to preload the cache when the app starts
+/**
+ * Called once at app startup (in _layout.tsx) BEFORE any API calls.
+ * Loads persisted data from AsyncStorage into the in-memory cache,
+ * then restores the APIStore state.
+ */
 export const hydrateStremioCache = async () => {
   try {
-    const keys = ['user', 'addons', 'authKey'];
-    for (const key of keys) {
-      const val = await AsyncStorage.getItem(key);
-      if (val) {
-        let parsed = JSON.parse(val);
+    const KEYS = ['authKey', 'user', 'addons', 'addonsLastModified'];
 
-        // THE MAGIC FAILSAFE: If it's addons, force it to be an array!
-        if (key.includes('addons') && !Array.isArray(parsed)) {
-          console.warn("Corrupted addons cache found during hydration. Wiping it.");
-          parsed = [];
+    for (const key of KEYS) {
+      try {
+        const raw = await AsyncStorage.getItem(key);
+        if (raw !== null) {
+          let parsed = JSON.parse(raw);
+
+          // Safety: addons must always be an array
+          if (key === 'addons' && !Array.isArray(parsed)) {
+            console.warn('[StremioAPI] Corrupted addons in storage, resetting');
+            parsed = [];
+            await AsyncStorage.removeItem(key);
+          }
+
+          memoryCache[key] = parsed;
         }
-
-        memoryCache[key] = parsed;
+      } catch (e) {
+        console.warn(`[StremioAPI] Failed to load key "${key}":`, e);
       }
     }
 
-    // Restore user data to APIStore
-    if (memoryCache['user']) {
-      APIStore.user = memoryCache['user'];
-      console.log('[StremioAPI] Hydrated user:', memoryCache['user']?.email);
+    // ✅ FIX: Manually restore user and re-trigger userChange so the internal
+    // ApiClient gets the correct authKey. Without this, authenticated API
+    // calls fail after app restart because the ApiClient has no authKey.
+    const user = memoryCache['user'];
+    const authKey = memoryCache['authKey'];
+
+    if (user && authKey) {
+      // userChange recreates the internal ApiClient with the correct authKey
+      (APIStore as any).userChange(authKey, user);
+      console.log('[StremioAPI] Restored session for:', user.email);
     }
-    
-    // Restore addons to APIStore
-    if (memoryCache['addons']) {
+
+    // Restore addons
+    if (Array.isArray(memoryCache['addons']) && memoryCache['addons'].length > 0) {
       APIStore.addons.load(memoryCache['addons']);
-      console.log('[StremioAPI] Hydrated', memoryCache['addons']?.length ?? 0, 'addons');
+      console.log('[StremioAPI] Restored', memoryCache['addons'].length, 'addons');
     }
   } catch (e) {
-    console.error("Failed to hydrate Stremio cache", e);
+    console.error('[StremioAPI] Hydration failed:', e);
   }
 };

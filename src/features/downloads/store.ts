@@ -1,3 +1,6 @@
+// ✅ FIX: eq MUST be imported at the top — it was at the bottom before,
+// causing "eq is not a function" errors when the store initialized.
+import { eq } from 'drizzle-orm';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { db } from '@/core/db';
@@ -123,7 +126,4 @@ export const useDownloadStore = create<DownloadState>()(
       skipHydration: true, // Manually rehydrate after DB is initialized
     }
   )
-);
-
-// Import eq after to avoid circular dependency
-import { eq } from 'drizzle-orm'; 
+); 

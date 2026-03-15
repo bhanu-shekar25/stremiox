@@ -25,6 +25,10 @@ export default function PlayerScreen() {
   }>();
 
   const playerRef = useRef<VLCPlayerRef>(null);
+
+  // ✅ FIX: Use a selector hook — getState() in JSX is a one-time snapshot and
+  // will NOT cause re-renders when isBuffering changes, making the overlay broken.
+  const isBuffering = usePlayerStore((state) => state.isBuffering);
   const { positionMs, durationMs, setProgress, setBuffering, setPlaying, reset } = usePlayerStore();
 
   const [showControls, setShowControls] = useState(false);
@@ -239,8 +243,8 @@ export default function PlayerScreen() {
         onBuffer={handleBuffer}
       />
 
-      {/* Buffering Indicator */}
-      {usePlayerStore.getState().isBuffering && (
+      {/* ✅ FIX: isBuffering now comes from a reactive selector above, not getState() */}
+      {isBuffering && (
         <View style={styles.bufferingOverlay}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>

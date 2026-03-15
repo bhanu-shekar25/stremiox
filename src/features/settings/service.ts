@@ -1,4 +1,5 @@
-// ✅ FIX: Use the new expo-file-system v55 API with Paths class
+// ✅ FIX: Use the new expo-file-system v55 API correctly
+// Paths.info() doesn't exist — use Directory.info() method instead
 import { Paths, Directory } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '@/core/db';
@@ -13,13 +14,13 @@ export async function getTotalStorageUsed(): Promise<number> {
   try {
     const downloadsDir = new Directory(Paths.cache, 'stremiox_downloads');
 
-    const info = Paths.info(downloadsDir.uri);
-    if (!info.isDirectory) return 0;
+    // Check if directory exists first
+    if (!downloadsDir.exists) return 0;
 
     // Iterate through files and sum their sizes
     let totalSize = 0;
     const contents = downloadsDir.list();
-    
+
     for (const item of contents) {
       // Use the File/Directory's size property directly
       if ('size' in item && typeof item.size === 'number') {
